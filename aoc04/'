@@ -1,0 +1,26 @@
+use std::io::{self, Read};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input)?;
+    let input: Vec<_> = input.split("\n\n").collect();
+
+    Ok(())
+}
+
+// byr (Birth Year)
+// iyr (Issue Year)
+// eyr (Expiration Year)
+// hgt (Height)
+// hcl (Hair Color)
+// ecl (Eye Color)
+// pid (Passport ID)
+// cid (Country ID)
+
+fn part_1(input: &[&str]) {
+    // don't want cid
+    let keys = vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+    let mut valid: u32 = 0;
+
+    for &passport in input {}
+}
