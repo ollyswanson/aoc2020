@@ -1,5 +1,4 @@
 use std::io::BufRead;
-use std::mem;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -14,7 +13,6 @@ pub enum AocError {
 // Part 1
 pub struct FirstBoat {
     /// 4 valid bearings, 0, 90, 180, 270, corresponding to the 4 cardinal directions clockwise
-    /// north
     bearing: i32,
     x: i32,
     y: i32,

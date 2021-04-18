@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum AocError {
+enum AocError {
     #[error("Read stdin error")]
     Stdin(#[from] std::io::Error),
     #[error("Parse int error")]
@@ -64,6 +64,7 @@ impl Differences {
     }
 }
 
+// part 2, assume sorted input
 #[derive(Default)]
 struct Memoizer {
     inner: HashMap<u32, u64>,
@@ -94,7 +95,7 @@ impl Memoizer {
         combinations
     }
 }
-// part 2, assume sorted input
+
 #[cfg(test)]
 mod test {
     use super::*;
