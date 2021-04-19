@@ -1,10 +1,12 @@
 use anyhow::{anyhow, Error, Result};
+use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::str::FromStr;
 
+#[derive(Clone)]
 pub struct Program {
     instructions: Instructions,
     memory: HashMap<u64, u64>,
@@ -36,11 +38,29 @@ impl Program {
         }
     }
 
+    pub fn run_alt(&mut self) {
+        let mut mask = Mask::new();
+
+        for instruction in self.instructions.0.iter() {
+            match instruction {
+                Instruction::Mask(m) => {
+                    mask.update(m);
+                }
+                Instruction::Mov { addr, val } => {
+                    for addr in mask.memory_addresses(*addr) {
+                        self.memory.insert(addr, *val);
+                    }
+                }
+            }
+        }
+    }
+
     pub fn sum_values(&self) -> u64 {
         self.memory.values().sum()
     }
 }
 
+#[derive(Clone)]
 pub struct Instructions(Vec<Instruction>);
 
 impl Instructions {
@@ -57,6 +77,7 @@ impl Instructions {
     }
 }
 
+#[derive(Clone)]
 enum Instruction {
     Mov { addr: u64, val: u64 },
     Mask(Vec<u8>),
@@ -121,10 +142,34 @@ impl Mask {
         self.or = or;
     }
 
-    fn apply_mask(&self, mut x: u64) -> u64 {
-        x &= self.and;
-        x |= self.or;
-        x
+    fn apply_mask(&self, x: u64) -> u64 {
+        x & self.and | self.or
+    }
+
+    fn floating_positions(&self) -> impl Iterator<Item = u64> + '_ {
+        // mask where all the 1s are where the Xs are in the mask and 0s elsewhere
+        let x = self.and & (!self.or);
+        (0u64..36).filter(move |&i| (1 << i) & x != 0)
+    }
+
+    fn memory_addresses(&self, addr: u64) -> impl Iterator<Item = u64> + '_ {
+        let addr = addr | self.or;
+        // turn off Xes
+        let addr = self
+            .floating_positions()
+            .fold(addr, |addr, pos| !(1 << pos) & addr);
+
+        // return iterator that turns them back on to produce all of the different floating
+        // combinations
+        self.floating_positions()
+            .powerset()
+            .map(move |x| self.apply_x(addr, &x))
+    }
+
+    fn apply_x(&self, addr: u64, positions: &[u64]) -> u64 {
+        positions
+            .iter()
+            .fold(addr, |addr, position| (1 << position) | addr)
     }
 }
 
@@ -147,5 +192,21 @@ mod test {
 
         program.run();
         assert_eq!(program.sum_values(), 165);
+    }
+
+    #[test]
+    fn part_2() {
+        let instructions = "\
+            mask = 000000000000000000000000000000X1001X
+            mem[42] = 100
+            mask = 00000000000000000000000000000000X0XX
+            mem[26] = 1\
+        ";
+        let instructions = Cursor::new(instructions);
+        let instructions = Instructions::from_reader(instructions).unwrap();
+        let mut program = Program::new(instructions);
+
+        program.run_alt();
+        assert_eq!(program.sum_values(), 208);
     }
 }
